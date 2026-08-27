@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const GuitarRigApp());
@@ -26,6 +27,8 @@ class MainRigScreen extends StatefulWidget {
 }
 
 class _MainRigScreenState extends State<MainRigScreen> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+
   List<String> savedBoards = [
     "فيروز - سولوهات",
     "James Brown - Funk",
@@ -40,19 +43,28 @@ class _MainRigScreenState extends State<MainRigScreen> {
   bool isOverdriveOn = true;
   bool isDelayOn = false;
 
+  void _playSound(String soundName) async {
+    try {
+      await _audioPlayer.stop();
+      await _audioPlayer.play(AssetSource('sounds/$soundName'));
+    } catch (e) {
+      debugPrint("خطأ في تشغيل الصوت: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Scaffold(
       backgroundColor: const Color(0xFF1E1E1E),
       appBar: AppBar(
-        title: const Text('RAM EFFECT - Unlimited Boards'),
+        title: const Text('RAM EFFECT'),
         backgroundColor: Colors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.add_to_photos, color: Colors.amber),
-            onPressed: () {
-              _showSaveBoardDialog();
-            },
+            onPressed: _showSaveBoardDialog,
           ),
         ],
       ),
@@ -70,131 +82,131 @@ class _MainRigScreenState extends State<MainRigScreen> {
             ...savedBoards.map((board) => ListTile(
                   leading: const Icon(Icons.music_note, color: Colors.amber),
                   title: Text(board),
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                 )),
           ],
         ),
       ),
-      body: Row(
-        children: [
-          Expanded(
-            flex: 3,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black45,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.amber.shade700, width: 1.5),
-                    ),
+                // قسم الدواسات (Pedals)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black45,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.amber.shade700, width: 1.5),
+                  ),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
                         _buildPedal("Overdrive", Colors.green, isOverdriveOn, () {
                           setState(() => isOverdriveOn = !isOverdriveOn);
+                          _playSound('overdrive.mp3');
                         }),
+                        const SizedBox(width: 10),
                         _buildPedal("Delay", Colors.blue, isDelayOn, () {
                           setState(() => isDelayOn = !isDelayOn);
+                          _playSound('delay.mp3');
                         }),
-                        _buildPedal("Reverb", Colors.purple, true, () {}),
-                        _buildPedal("Chorus", Colors.deepOrange, false, () {}),
+                        const SizedBox(width: 10),
+                        _buildPedal("Reverb", Colors.purple, true, () {
+                          _playSound('reverb.mp3');
+                        }),
+                        const SizedBox(width: 10),
+                        _buildPedal("Chorus", Colors.deepOrange, false, () {
+                          _playSound('chorus.mp3');
+                        }),
                       ],
                     ),
                   ),
                 ),
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    margin: const EdgeInsets.all(8),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2C251E),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orangeAccent, width: 2),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text("TUBE MASTER 50 AMP", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _buildKnob("Gain", gainValue, (v) => setState(() => gainValue = v)),
-                            _buildKnob("Bass", 6.0, (v) {}),
-                            _buildKnob("Treble", 7.5, (v) {}),
-                            _buildKnob("Volume", volumeValue, (v) => setState(() => volumeValue = v)),
-                          ],
-                        ),
-                      ],
-                    ),
+                const SizedBox(height: 12),
+
+                // قسم الأمبليفاير (Amplifier)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C251E),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.orangeAccent, width: 2),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text("TUBE MASTER 50 AMP", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        alignment: WrapAlignment.spaceAround,
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          _buildKnob("Gain", gainValue, (v) => setState(() => gainValue = v)),
+                          _buildKnob("Bass", 6.0, (v) {}),
+                          _buildKnob("Treble", 7.5, (v) {}),
+                          _buildKnob("Volume", volumeValue, (v) => setState(() => volumeValue = v)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // قسم دواسة التعبير (Expression Controls)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text("EXPRESSION CONTROLS", style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const Text("VOLUME", style: TextStyle(color: Colors.amber, fontSize: 10)),
+                                Slider(
+                                  value: volumeValue,
+                                  min: 0,
+                                  max: 10,
+                                  activeColor: Colors.amber,
+                                  onChanged: (v) => setState(() => volumeValue = v),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                const Text("WAH / GAIN", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
+                                Slider(
+                                  value: wahValue,
+                                  min: 0,
+                                  max: 10,
+                                  activeColor: Colors.redAccent,
+                                  onChanged: (v) => setState(() => wahValue = v),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-          Expanded(
-            flex: 1,
-            child: Container(
-              margin: const EdgeInsets.all(8),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  const Text("EXPRESSION", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const Text("VOLUME", style: TextStyle(color: Colors.amber, fontSize: 10)),
-                        Expanded(
-                          child: RotatedBox(
-                            quarterTurns: 3,
-                            child: Slider(
-                              value: volumeValue,
-                              min: 0,
-                              max: 10,
-                              activeColor: Colors.amber,
-                              onChanged: (v) => setState(() => volumeValue = v),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Divider(color: Colors.white24),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        const Text("WAH / GAIN", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
-                        Expanded(
-                          child: RotatedBox(
-                            quarterTurns: 3,
-                            child: Slider(
-                              value: wahValue,
-                              min: 0,
-                              max: 10,
-                              activeColor: Colors.redAccent,
-                              onChanged: (v) => setState(() => wahValue = v),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -203,8 +215,8 @@ class _MainRigScreenState extends State<MainRigScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 75,
-        height: 120,
+        width: 80,
+        height: 110,
         decoration: BoxDecoration(
           color: isOn ? color : color.withOpacity(0.3),
           borderRadius: BorderRadius.circular(8),
@@ -222,17 +234,20 @@ class _MainRigScreenState extends State<MainRigScreen> {
   }
 
   Widget _buildKnob(String label, double value, ValueChanged<double> onChanged) {
-    return Column(
-      children: [
-        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-        Slider(
-          value: value,
-          min: 0,
-          max: 10,
-          activeColor: Colors.amber,
-          onChanged: onChanged,
-        ),
-      ],
+    return SizedBox(
+      width: 140,
+      child: Column(
+        children: [
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+          Slider(
+            value: value,
+            min: 0,
+            max: 10,
+            activeColor: Colors.amber,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 
