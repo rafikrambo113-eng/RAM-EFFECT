@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const GuitarRigApp());
@@ -13,7 +12,9 @@ class GuitarRigApp extends StatelessWidget {
     return MaterialApp(
       title: 'RAM EFFECT',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.dark(),
+      theme: ThemeData.dark().copyWith(
+        scaffoldBackgroundColor: const Color(0xFF141414),
+      ),
       home: const MainRigScreen(),
     );
   }
@@ -27,253 +28,206 @@ class MainRigScreen extends StatefulWidget {
 }
 
 class _MainRigScreenState extends State<MainRigScreen> {
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
-  List<String> savedBoards = [
-    "فيروز - سولوهات",
-    "James Brown - Funk",
-    "Hotel California",
-    "Clean Acoustic",
-    "Heavy Distortion Solo"
-  ];
-
-  double gainValue = 5.0;
-  double volumeValue = 8.0;
-  double wahValue = 0.0;
-  bool isOverdriveOn = true;
+  bool isDriveOn = true;
   bool isDelayOn = false;
+  bool isReverbOn = true;
+  bool isChorusOn = false;
 
-  void _playSound(String soundName) async {
-    try {
-      await _audioPlayer.stop();
-      await _audioPlayer.play(AssetSource('sounds/$soundName'));
-    } catch (e) {
-      debugPrint("خطأ في تشغيل الصوت: $e");
-    }
-  }
+  double gain = 7.5;
+  double bass = 6.0;
+  double treble = 8.0;
+  double masterVolume = 8.5;
+  double wahValue = 3.0;
 
   @override
   Widget build(BuildContext context) {
-    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
-
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E1E),
       appBar: AppBar(
-        title: const Text('RAM EFFECT'),
-        backgroundColor: Colors.black,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_to_photos, color: Colors.amber),
-            onPressed: _showSaveBoardDialog,
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.amber),
-              child: Text(
-                'مكتبة الـ Boards المخصصة',
-                style: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-            ),
-            ...savedBoards.map((board) => ListTile(
-                  leading: const Icon(Icons.music_note, color: Colors.amber),
-                  title: Text(board),
-                  onTap: () => Navigator.pop(context),
-                )),
-          ],
-        ),
+        title: const Text('RAM EFFECT - GUITAR RIG PRO'),
+        backgroundColor: const Color(0xFF1E1E1E),
+        centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              children: [
-                // قسم الدواسات (Pedals)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black45,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade700, width: 1.5),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildPedal("Overdrive", Colors.green, isOverdriveOn, () {
-                          setState(() => isOverdriveOn = !isOverdriveOn);
-                          _playSound('overdrive.mp3');
-                        }),
-                        const SizedBox(width: 10),
-                        _buildPedal("Delay", Colors.blue, isDelayOn, () {
-                          setState(() => isDelayOn = !isDelayOn);
-                          _playSound('delay.mp3');
-                        }),
-                        const SizedBox(width: 10),
-                        _buildPedal("Reverb", Colors.purple, true, () {
-                          _playSound('reverb.mp3');
-                        }),
-                        const SizedBox(width: 10),
-                        _buildPedal("Chorus", Colors.deepOrange, false, () {
-                          _playSound('chorus.mp3');
-                        }),
-                      ],
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 4,
+                child: Column(
+                  children: [
+                    // AMP HEAD
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        margin: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF221C16),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.amber.shade700, width: 2),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("TUBE MASTER 50W",
+                                    style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold, fontSize: 13)),
+                                Icon(Icons.power_settings_new, color: Colors.redAccent, size: 18),
+                              ],
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+                                _buildRotaryKnob("GAIN", gain, (v) => setState(() => gain = v)),
+                                _buildRotaryKnob("BASS", bass, (v) => setState(() => bass = v)),
+                                _buildRotaryKnob("TREBLE", treble, (v) => setState(() => treble = v)),
+                                _buildRotaryKnob("MASTER", masterVolume, (v) => setState(() => masterVolume = v)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
 
-                // قسم الأمبليفاير (Amplifier)
-                Container(
-                  padding: const EdgeInsets.all(12),
+                    // PEDALBOARD
+                    Expanded(
+                      flex: 5,
+                      child: Container(
+                        margin: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1A1A1A),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.white12),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStompBox("OVERDRIVE", Colors.green.shade800, isDriveOn, () {
+                              setState(() => isDriveOn = !isDriveOn);
+                            }),
+                            _buildStompBox("DELAY", Colors.blue.shade900, isDelayOn, () {
+                              setState(() => isDelayOn = !isDelayOn);
+                            }),
+                            _buildStompBox("REVERB", Colors.purple.shade900, isReverbOn, () {
+                              setState(() => isReverbOn = !isReverbOn);
+                            }),
+                            _buildStompBox("CHORUS", Colors.orange.shade900, isChorusOn, () {
+                              setState(() => isChorusOn = !isChorusOn);
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // WAH PEDAL
+              Expanded(
+                flex: 1,
+                child: Container(
+                  margin: const EdgeInsets.all(6),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2C251E),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.orangeAccent, width: 2),
+                    color: const Color(0xFF111111),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white24, width: 1.5),
                   ),
                   child: Column(
                     children: [
-                      const Text("TUBE MASTER 50 AMP", style: TextStyle(color: Colors.amber, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        alignment: WrapAlignment.spaceAround,
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          _buildKnob("Gain", gainValue, (v) => setState(() => gainValue = v)),
-                          _buildKnob("Bass", 6.0, (v) {}),
-                          _buildKnob("Treble", 7.5, (v) {}),
-                          _buildKnob("Volume", volumeValue, (v) => setState(() => volumeValue = v)),
-                        ],
+                      const Text("WAH", style: TextStyle(color: Colors.redAccent, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Expanded(
+                        child: RotatedBox(
+                          quarterTurns: 3,
+                          child: Slider(
+                            value: wahValue,
+                            min: 0,
+                            max: 10,
+                            activeColor: Colors.redAccent,
+                            onChanged: (v) => setState(() => wahValue = v),
+                          ),
+                        ),
                       ),
+                      Text(wahValue.toStringAsFixed(1), style: const TextStyle(color: Colors.white, fontSize: 11)),
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                // قسم دواسة التعبير (Expression Controls)
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.black87,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text("EXPRESSION CONTROLS", style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text("VOLUME", style: TextStyle(color: Colors.amber, fontSize: 10)),
-                                Slider(
-                                  value: volumeValue,
-                                  min: 0,
-                                  max: 10,
-                                  activeColor: Colors.amber,
-                                  onChanged: (v) => setState(() => volumeValue = v),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                const Text("WAH / GAIN", style: TextStyle(color: Colors.redAccent, fontSize: 10)),
-                                Slider(
-                                  value: wahValue,
-                                  min: 0,
-                                  max: 10,
-                                  activeColor: Colors.redAccent,
-                                  onChanged: (v) => setState(() => wahValue = v),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildPedal(String name, Color color, bool isOn, VoidCallback onTap) {
+  Widget _buildRotaryKnob(String label, double val, ValueChanged<double> onChanged) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 9, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 4),
+        GestureDetector(
+          onVerticalDragUpdate: (details) {
+            double change = -details.delta.dy / 15;
+            double newVal = (val + change).clamp(0.0, 10.0);
+            onChanged(newVal);
+          },
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.grey.shade900,
+              border: Border.all(color: Colors.amber, width: 2),
+            ),
+            child: Center(
+              child: Text(val.toStringAsFixed(1), style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStompBox(String name, Color color, bool isOn, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 80,
-        height: 110,
+        width: 75,
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isOn ? color : color.withOpacity(0.3),
+          color: isOn ? color : color.withOpacity(0.35),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white54, width: 2),
+          border: Border.all(color: Colors.black, width: 2),
         ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            Icon(Icons.power_settings_new, color: isOn ? Colors.white : Colors.black),
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isOn ? Colors.redAccent : Colors.black,
+              ),
+            ),
+            Text(name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10)),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.grey.shade300,
+                border: Border.all(color: Colors.grey.shade800, width: 3),
+              ),
+              child: const Icon(Icons.circle, color: Colors.black38, size: 16),
+            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildKnob(String label, double value, ValueChanged<double> onChanged) {
-    return SizedBox(
-      width: 140,
-      child: Column(
-        children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 11)),
-          Slider(
-            value: value,
-            min: 0,
-            max: 10,
-            activeColor: Colors.amber,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSaveBoardDialog() {
-    TextEditingController controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("حفظ Board جديد"),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(hintText: "ادخل اسم الاغنية أو الـ Preset"),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              if (controller.text.isNotEmpty) {
-                setState(() {
-                  savedBoards.add(controller.text);
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: const Text("حفظ"),
-          )
-        ],
       ),
     );
   }
