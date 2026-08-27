@@ -41,4 +41,3 @@ jobs:
         with:
           name: ram-effect-apk
           path: build/app/outputs/flutter-apk/app-release.apk
-          
