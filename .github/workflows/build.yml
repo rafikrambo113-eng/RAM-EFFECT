@@ -14,7 +14,7 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Flutter
@@ -22,8 +22,14 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Generate Android Files
+      - name: Clean conflicting files
+        run: rm -rf android
+
+      - name: Generate Fresh Android Project
         run: flutter create . --platforms=android
+
+      - name: Get Dependencies
+        run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --debug
@@ -31,5 +37,5 @@ jobs:
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug.apk
+          name: app-debug
           path: build/app/outputs/flutter-apk/app-debug.apk
